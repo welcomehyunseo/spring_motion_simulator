@@ -3,7 +3,14 @@
 
 #include <iostream>
 
+#include <SDL.h>
+#undef main
+
 int main(void)
 {
-    std::cout << "Hello World!\n";
+    SDL_Init(SDL_INIT_VIDEO);
+
+    std::cout << "Hello World!" << std::endl;
+    
+    return 0;
 }
