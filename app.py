@@ -131,11 +131,8 @@ def to_x_screen(
     assert screen_width > 0
     assert screen_margin > 0
 
-    a: np.single = (
-        np.single(screen_width - (screen_margin * 2)) / (x0_prime * 2)
-    )
-    
-    x_screen: np.single = (x * a) + (screen_width / 2)
+    a = np.single(screen_width - (screen_margin * 2)) / (x0_prime * 2)
+    x_screen: np.int_ = np.int_((x * a) + (screen_width / 2))
 
     return x_screen
 
