@@ -139,7 +139,7 @@ def to_x_screen(
 
     return x_screen
 
-FRAMERATE: np.single = 120
+FRAMERATE: np.single = 30
 
 PRINTABLE = False
 
@@ -147,19 +147,32 @@ SCREEN_WIDTH: np.int_ = 500
 SCREEN_HEIGHT: np.int_ = 500
 SCREEN_MARGIN: np.int_ = 50
 
-TOTAL_TIME: np.single = 7.0  # in seconds
+MASS: np.single = 1.0
+MU: np.single = 1.5  # the damping coefficient
+K: np.single = 20.0  # the spring constant
+X0: np.single = -0.2
+
+END_TIME: np.single = 7.0  # in seconds
 
 if __name__ == "__main__":
     print("Hello, World!")
 
-    x0: np.single = -0.2
-    spring_ode = SpringODE(1.0, 1.5, 20.0, x0)
+    intro_table = PrettyTable([
+        "Mass at end of Spring", 
+        "Damping Coefficient", 
+        "Spring Constant", 
+        "Initial Spring Deflection",
+        "End Time in seconds",
+    ])
+    intro_table.add_row([MASS, MU, K, X0, END_TIME])
+    print(intro_table)
+
+    spring_ode = SpringODE(MASS, MU, K, X0)
 
     finish = False
-    table = PrettyTable()
-
-    table.field_names = ["time", "position", "velocity"]
-    table.add_row([
+    result_table = PrettyTable(["Time", "Position", "Velocity"])
+    
+    result_table.add_row([
         spring_ode.time(), 
         spring_ode.position(), 
         spring_ode.velocity(),
@@ -194,7 +207,7 @@ if __name__ == "__main__":
             print(f"t: {spring_ode.time()}")
 
         x_screen: np.int_ = to_x_screen(
-                x0, 
+                X0, 
                 SCREEN_WIDTH, SCREEN_MARGIN,
                 spring_ode.position(),
             )
@@ -205,7 +218,7 @@ if __name__ == "__main__":
             20)
     
         if finish == False:
-            table.add_row([
+            result_table.add_row([
                 spring_ode.time(), 
                 spring_ode.position(), 
                 spring_ode.velocity(),
@@ -216,8 +229,8 @@ if __name__ == "__main__":
 
         clock.tick(FRAMERATE)  # limits FPS to FRAMERATE
 
-        if spring_ode.time() > TOTAL_TIME and finish == False:
-            print(table)
+        if spring_ode.time() > END_TIME and finish == False:
+            print(result_table)
             finish = True
             PRINTABLE = False
 
