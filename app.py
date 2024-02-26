@@ -117,15 +117,37 @@ class SpringODE(ODE):
 
         return dq_arr
     
-def ticks_in_seconds() -> float:
-    return float(pygame.time.get_ticks()) / 1000
+def ticks_in_seconds() -> np.single:
+    return np.single(pygame.time.get_ticks()) / 1000
+
+def to_x_screen(
+        x0: np.single, 
+        screen_width: np.int_, 
+        screen_margin: np.int_,
+        x: np.single,
+    ) -> np.int_:
+    x0_prime = abs(x0)
+    assert x0_prime > 0
+    assert screen_width > 0
+    assert screen_margin > 0
+
+    a: np.single = (
+        np.single(screen_width - (screen_margin * 2)) / (x0_prime * 2)
+    )
+    
+    x_screem: np.single = (x * a) + (screen_width / 2)
+
+    return x_screem
 
 if __name__ == "__main__":
     print("Hello, World!")
 
-    spring_ode = SpringODE(1.0, 1.5, 20.0, -0.2)
+    x0: np.single = -0.2
+    spring_ode = SpringODE(1.0, 1.5, 20.0, x0)
     
-    printable = True
+    printable = False
+
+    finish = False
     table = PrettyTable()
 
     table.field_names = ["time", "position", "velocity"]
@@ -135,19 +157,23 @@ if __name__ == "__main__":
         spring_ode.velocity(),
     ])  
 
+    screen_width: np.int_ = 500
+    screen_height: np.int_ = 500
+    screen_margin: np.int_ = 50
+
     # pygame setup
     pygame.init()
     icon_img = pygame.image.load("icon.png")
     pygame.display.set_icon(icon_img)
     pygame.display.set_caption("Spring Motion Simulator")
-    screen = pygame.display.set_mode((500, 500))
+    screen = pygame.display.set_mode((screen_width, screen_height))
     clock = pygame.time.Clock()
     running = True
 
-    total_sec: float = 7.0
-    prev_sec: float
-    curr_sec: float = ticks_in_seconds()
-    dt: float
+    total_sec: np.single = 7.0
+    prev_sec: np.single
+    curr_sec: np.single = ticks_in_seconds()
+    dt: np.single
 
     while running:
         # poll for events
@@ -163,27 +189,37 @@ if __name__ == "__main__":
         prev_sec = curr_sec
         curr_sec = ticks_in_seconds()
         dt = curr_sec - prev_sec
-        if printable == True:
+        if printable == True and finish == False:
             print(f"dt: {dt}")
 
         spring_ode.update(dt)
 
-        x: int = int(spring_ode.position() * 1000) + 250  # TODO: refactoring
-        pygame.draw.circle(screen, (200, 200, 200), [x, 250], 10)
-
-        table.add_row([
-            spring_ode.time(), 
-            spring_ode.position(), 
-            spring_ode.velocity(),
-        ])
+        x_screen: np.int_ = to_x_screen(
+                x0, 
+                screen_width, screen_margin,
+                spring_ode.position(),
+            )
+        pygame.draw.circle(
+            screen, 
+            (200, 200, 200), 
+            [x_screen, 250], 
+            50)
+    
+        if finish == False:
+            table.add_row([
+                spring_ode.time(), 
+                spring_ode.position(), 
+                spring_ode.velocity(),
+            ])
 
         # flip() the display to put your work on screen
         pygame.display.flip()
 
         clock.tick(60)  # limits FPS to 60
 
-        if spring_ode.time() > total_sec and printable == True:
+        if spring_ode.time() > total_sec and finish == False:
             print(table)
+            finish = True
             printable = False
 
     pygame.quit()
