@@ -1,9 +1,9 @@
-from numpy._typing import NDArray
 import pygame
+
 import numpy as np
 import numpy.typing as npt
+
 from prettytable import PrettyTable
-import time
 
 from abc import ABC, abstractmethod
 
@@ -11,59 +11,59 @@ class ODE(ABC):
     def __init__(self, eqns_num: np.int_) -> None:
         assert eqns_num > 0
 
-        self.eqns_num = eqns_num
-        self.q_arr = np.empty(eqns_num, dtype=np.single)
-        self.s = np.single(0)
+        self.EQNS_NUM = eqns_num
+        self.q = np.empty(eqns_num, dtype=np.single)
+        self.t = np.single(0)
 
-    def get_q(self, index: np.int_) -> np.single:
+    def get_value(self, index: np.int_) -> np.single:
         assert index >= 0
-        assert index < self.eqns_num
-        assert self.q_arr.size == self.eqns_num
+        assert index < self.EQNS_NUM
+        assert self.q.size == self.EQNS_NUM
 
-        return np.single(self.q_arr[index])
+        return np.single(self.q[index])
     
-    def set_q(self, index: np.int_, value: np.single) -> None:
+    def set_value(self, index: np.int_, value: np.single) -> None:
         assert index >= 0
-        assert index < self.eqns_num
-        assert self.q_arr.size == self.eqns_num
+        assert index < self.EQNS_NUM
+        assert self.q.size == self.EQNS_NUM
 
-        self.q_arr[index] = value
+        self.q[index] = value
 
     @abstractmethod
-    def dq_arr(
+    def dq(
         self, 
-        s: np.single, 
-        q_arr: npt.NDArray[np.single],
-        prev_dq_arr: npt.NDArray[np.single],
-        ds: np.single,
+        t: np.single, 
+        q: npt.NDArray[np.single],
+        prev_dq: npt.NDArray[np.single],
+        dt: np.single,
         q_scale: np.single,
     ) -> npt.NDArray[np.single]:
         pass
 
 
 # Fourth-order Runge-Kutta ODE Solver
-def solve_ODE(ode: ODE, ds: np.single):
-    eqns_num = ode.eqns_num
-    q_arr = ode.q_arr
-    s = ode.s
+def solve_ODE(ode: ODE, dt: np.single):
+    eqns_num = ode.EQNS_NUM
+    q = ode.q
+    t = ode.t
 
-    dq_arr1 = ode.dq_arr(s, q_arr, q_arr, ds, 0.5)
-    assert dq_arr1.size == eqns_num
-    dq_arr2 = ode.dq_arr(s + (0.5 * ds), q_arr, dq_arr1, ds, 0.5)
-    assert dq_arr2.size == eqns_num
-    dq_arr3 = ode.dq_arr(s + (0.5 * ds), q_arr, dq_arr2, ds, 0.5)
-    assert dq_arr3.size == eqns_num
-    dq_arr4 = ode.dq_arr(s + ds, q_arr, dq_arr3, ds, 1)
-    assert dq_arr4.size == eqns_num
+    dq1 = ode.dq(t, q, q, dt, 0.5)
+    assert dq1.size == eqns_num
+    dq2 = ode.dq(t + (0.5 * dt), q, dq1, dt, 0.5)
+    assert dq2.size == eqns_num
+    dq3 = ode.dq(t + (0.5 * dt), q, dq2, dt, 0.5)
+    assert dq3.size == eqns_num
+    dq4 = ode.dq(t + dt, q, dq3, dt, 1)
+    assert dq4.size == eqns_num
 
-    ode.s = s + ds
+    ode.t = t + dt
 
     for i in range(eqns_num):
-        q_arr[i] = q_arr[i] + (
-                dq_arr1[i] + 
-                (2.0 * dq_arr2[i]) + 
-                (2.0 * dq_arr3[i]) + 
-                dq_arr4[i]
+        q[i] = q[i] + (
+                dq1[i] + 
+                (2.0 * dq2[i]) + 
+                (2.0 * dq3[i]) + 
+                dq4[i]
             ) / 6.0
     
     return
@@ -81,41 +81,41 @@ class SpringODE(ODE):
         self.k = k
         self.x0 = x0
 
-        self.set_q(0, 0.0)
-        self.set_q(1, x0)
+        self.set_value(0, 0.0)
+        self.set_value(1, x0)
 
     def velocity(self) -> np.single:
-        return self.get_q(0)
+        return self.get_value(0)
     
     def position(self) -> np.single:
-        return self.get_q(1)
+        return self.get_value(1)
 
     def time(self) -> np.single:
-        return self.s
+        return self.t
     
     def update(self, dt: np.single) -> None:
         solve_ODE(self, dt)
 
-    def dq_arr(
+    def dq(
         self, 
         s: np.single, 
-        q_arr: npt.NDArray[np.single],
-        prev_dq_arr: npt.NDArray[np.single],
-        ds: np.single,
+        q: npt.NDArray[np.single],
+        prev_dq: npt.NDArray[np.single],
+        dt: np.single,
         q_scale: np.single,
     ) -> npt.NDArray[np.single]:
-        dq_arr = np.empty(self.eqns_num, dtype=np.single)
-        new_q_arr = np.empty(self.eqns_num, dtype=np.single)
+        dq = np.empty(self.EQNS_NUM, dtype=np.single)
+        new_q = np.empty(self.EQNS_NUM, dtype=np.single)
 
-        for i in range(self.eqns_num):
-            new_q_arr[i] = q_arr[i] + (q_scale * prev_dq_arr[i])
+        for i in range(self.EQNS_NUM):
+            new_q[i] = q[i] + (q_scale * prev_dq[i])
         
-        dq_arr[0] = -ds * (
-                (self.mu * new_q_arr[0]) + (self.k * new_q_arr[1])
+        dq[0] = -dt * (
+                (self.mu * new_q[0]) + (self.k * new_q[1])
             ) / self.mass
-        dq_arr[1] = ds * new_q_arr[0]
+        dq[1] = dt * new_q[0]
 
-        return dq_arr
+        return dq
     
 def ticks_in_seconds() -> np.single:
     return np.single(pygame.time.get_ticks()) / 1000
@@ -135,17 +135,25 @@ def to_x_screen(
         np.single(screen_width - (screen_margin * 2)) / (x0_prime * 2)
     )
     
-    x_screem: np.single = (x * a) + (screen_width / 2)
+    x_screen: np.single = (x * a) + (screen_width / 2)
 
-    return x_screem
+    return x_screen
+
+FRAMERATE: np.single = 120
+
+PRINTABLE = False
+
+SCREEN_WIDTH: np.int_ = 500
+SCREEN_HEIGHT: np.int_ = 500
+SCREEN_MARGIN: np.int_ = 50
+
+TOTAL_TIME: np.single = 7.0  # in seconds
 
 if __name__ == "__main__":
     print("Hello, World!")
 
     x0: np.single = -0.2
     spring_ode = SpringODE(1.0, 1.5, 20.0, x0)
-    
-    printable = False
 
     finish = False
     table = PrettyTable()
@@ -157,23 +165,16 @@ if __name__ == "__main__":
         spring_ode.velocity(),
     ])  
 
-    screen_width: np.int_ = 500
-    screen_height: np.int_ = 500
-    screen_margin: np.int_ = 50
-
     # pygame setup
     pygame.init()
     icon_img = pygame.image.load("icon.png")
     pygame.display.set_icon(icon_img)
     pygame.display.set_caption("Spring Motion Simulator")
-    screen = pygame.display.set_mode((screen_width, screen_height))
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     clock = pygame.time.Clock()
     running = True
 
-    total_sec: np.single = 7.0
-    prev_sec: np.single
-    curr_sec: np.single = ticks_in_seconds()
-    dt: np.single
+    dt: np.single = 1.0/FRAMERATE
 
     while running:
         # poll for events
@@ -186,24 +187,22 @@ if __name__ == "__main__":
         screen.fill("black")
 
         # RENDER YOUR GAME HERE
-        prev_sec = curr_sec
-        curr_sec = ticks_in_seconds()
-        dt = curr_sec - prev_sec
-        if printable == True and finish == False:
-            print(f"dt: {dt}")
 
         spring_ode.update(dt)
 
+        if PRINTABLE == True and finish == False:
+            print(f"t: {spring_ode.time()}")
+
         x_screen: np.int_ = to_x_screen(
                 x0, 
-                screen_width, screen_margin,
+                SCREEN_WIDTH, SCREEN_MARGIN,
                 spring_ode.position(),
             )
         pygame.draw.circle(
             screen, 
             (200, 200, 200), 
             [x_screen, 250], 
-            50)
+            20)
     
         if finish == False:
             table.add_row([
@@ -215,12 +214,12 @@ if __name__ == "__main__":
         # flip() the display to put your work on screen
         pygame.display.flip()
 
-        clock.tick(60)  # limits FPS to 60
+        clock.tick(FRAMERATE)  # limits FPS to FRAMERATE
 
-        if spring_ode.time() > total_sec and finish == False:
+        if spring_ode.time() > TOTAL_TIME and finish == False:
             print(table)
             finish = True
-            printable = False
+            PRINTABLE = False
 
     pygame.quit()
     
