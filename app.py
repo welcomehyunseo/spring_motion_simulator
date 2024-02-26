@@ -34,7 +34,7 @@ class ODE(ABC):
         self, 
         t: np.single, 
         q: npt.NDArray[np.single],
-        prev_dq: npt.NDArray[np.single],
+        dq_prev: npt.NDArray[np.single],
         dt: np.single,
         q_scale: np.single,
     ) -> npt.NDArray[np.single]:
@@ -100,7 +100,7 @@ class SpringODE(ODE):
         self, 
         s: np.single, 
         q: npt.NDArray[np.single],
-        prev_dq: npt.NDArray[np.single],
+        dq_prev: npt.NDArray[np.single],
         dt: np.single,
         q_scale: np.single,
     ) -> npt.NDArray[np.single]:
@@ -108,7 +108,7 @@ class SpringODE(ODE):
         new_q = np.empty(self.EQNS_NUM, dtype=np.single)
 
         for i in range(self.EQNS_NUM):
-            new_q[i] = q[i] + (q_scale * prev_dq[i])
+            new_q[i] = q[i] + (q_scale * dq_prev[i])
         
         dq[0] = -dt * (
                 (self.mu * new_q[0]) + (self.k * new_q[1])
