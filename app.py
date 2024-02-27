@@ -154,14 +154,20 @@ END_TIME: np.single = 7.0  # in seconds
 if __name__ == "__main__":
     print("Hello, World!")
 
-    intro_table = PrettyTable([
-        "Mass at end of Spring", 
-        "Damping Coefficient", 
-        "Spring Constant", 
-        "Initial Spring Deflection",
-        "End Time in seconds",
-    ])
-    intro_table.add_row([MASS, MU, K, X0, END_TIME])
+    intro_table = PrettyTable()
+    intro_table.add_column(
+        fieldname="Name", 
+        column=[
+            "Mass at end of Spring (kg)", 
+            "Damping Coefficient (kg/s)", 
+            "Spring Constant (N/m)", 
+            "Initial Spring Deflection (m)",
+            "End Time to Record (s)",
+        ]
+    )
+    intro_table.add_column(
+        fieldname="Value", 
+        column=[MASS, MU, K, X0, END_TIME])
     print(intro_table)
 
     spring_ode = SpringODE(MASS, MU, K, X0)
